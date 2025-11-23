@@ -3,12 +3,13 @@ const cors = require('cors')
 const app = express()
 require('dotenv').config()
 const { MongoClient, ServerApiVersion } = require('mongodb');
-const port = process.env.PORT || 3000
+const port = process.env.PORT || 5000
 
 
 // medilayer 
 app.use(express.json());
 app.use(cors());
+
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.rzhc4zj.mongodb.net/?appName=Cluster0`;
 
@@ -30,6 +31,7 @@ async function run() {
     const parcleCollection = db.collection('parcles');
 
 
+
     // parcles api 
     app.get('/parcles', async (req, res) =>{
       const query ={}
@@ -38,8 +40,6 @@ async function run() {
       if(email){
         query.SenderEmail = email;
       }
-
-
 
       const cursor = parcleCollection.find(query);
       const result = await cursor.toArray();
@@ -59,7 +59,7 @@ async function run() {
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // Ensures that the client will close when you finish/error
-    // await client.close();
+  
   }
 }
 run().catch(console.dir);
