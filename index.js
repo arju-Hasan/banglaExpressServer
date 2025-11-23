@@ -27,19 +27,30 @@ async function run() {
 
 
     const db = client.db('bangla_express_db');
-    const parcleCollection = db.collection(parcles);
+    const parcleCollection = db.collection('parcles');
 
 
     // parcles api 
     app.get('/parcles', async (req, res) =>{
+      const query ={}
 
+      const {email} = req.query;
+      if(email){
+        query.SenderEmail = email;
+      }
+
+
+
+      const cursor = parcleCollection.find(query);
+      const result = await cursor.toArray();
+      res.send(result);
     });
 
 
     app.post('/parcles', async (req, res)=>{
         const parcle = req.body;
-        const result = parcleCollection.insertOne(parcle);
-        req.send(result)
+        const result = await parcleCollection.insertOne(parcle);
+        res.send(result)
         } )
 
 
