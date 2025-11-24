@@ -1,7 +1,9 @@
+require('dotenv').config();
 const express = require('express')
 const cors = require('cors')
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const app = express()
-require('dotenv').config()
+
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 // const { default: home } = require('./home');
 const port = process.env.PORT || 3000
@@ -67,10 +69,40 @@ async function run() {
       const query = { _id: new ObjectId(id)};
       const result = await parcleCollection.deleteOne(query);
       res.send(result)
-    })    
+    })  
+    // ============== payment Api =================
+    app.post('/create-checkout-session', async (req, res) => {
+    const paymentInfo = req.body;
+    const amount = parseInt(paymentInfo.cost)*100
+    const session = await stripe.checkout.sessions.create({
+    line_items: [
+      {
+       price_data: {
+        currency: 'USD',
+        unit_amount: amount,
+        product_data: {
+          name: paymentInfo.parcleName
+        }
+       },
+         quantity: 1
+       
+      },
+    ],
+    mode: 'payment',
+    metadata:{
+      parcleId: paymentInfo.parcleId
+    },
+    success_url: `${process.env.MY_DOMAIN}/dashboard/payment-success`,
+    cancel_url: `${process.env.MY_DOMAIN}/dashboard/payment-cancelled`,
+  });
+
+  // res.redirect(303, session.url);
+  console.log(session);
+  res.send({url: session.url})
+});  
 
 
-    // Send a ping to confirm a successful connection
+ // Send a ping to confirm a successful connection ===================================
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
