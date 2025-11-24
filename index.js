@@ -3,6 +3,7 @@ const cors = require('cors')
 const app = express()
 require('dotenv').config()
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+// const { default: home } = require('./home');
 const port = process.env.PORT || 3000
 
 
@@ -46,6 +47,13 @@ async function run() {
       res.send(result);
     });
 
+    app.get('/parcles/:id', async(req, res) =>{
+       const id = req.params.id;
+      const query = { _id: new ObjectId(id)};
+      const result = await parcleCollection.findOne(query);
+      res.send(result)
+    })
+
     app.post('/parcles', async (req, res)=>{
         const parcle = req.body;
         // parcle send time 
@@ -57,7 +65,6 @@ async function run() {
     app.delete('/parcles/:id', async(req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id)};
-
       const result = await parcleCollection.deleteOne(query);
       res.send(result)
     })    
@@ -76,6 +83,7 @@ run().catch(console.dir);
 
 app.get('/', (req, res) => {
   res.send('Bangla Express server is raning.....!')
+ 
 })
 
 app.listen(port, () => {
