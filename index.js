@@ -2,8 +2,8 @@ const express = require('express')
 const cors = require('cors')
 const app = express()
 require('dotenv').config()
-const { MongoClient, ServerApiVersion } = require('mongodb');
-const port = process.env.PORT || 5000
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const port = process.env.PORT || 3000
 
 
 // medilayer 
@@ -32,26 +32,35 @@ async function run() {
 
 
 
-    // parcles api 
+    // =============== parcles api ===============
     app.get('/parcles', async (req, res) =>{
       const query ={}
-
       const {email} = req.query;
       if(email){
         query.SenderEmail = email;
-      }
-
-      const cursor = parcleCollection.find(query);
+      }      
+      // sort by new 
+      const options = {sort : {createdAt: -1}}
+      const cursor = parcleCollection.find(query, options);
       const result = await cursor.toArray();
       res.send(result);
     });
 
-
     app.post('/parcles', async (req, res)=>{
         const parcle = req.body;
+        // parcle send time 
+       parcle.createdAt = new Date();
         const result = await parcleCollection.insertOne(parcle);
         res.send(result)
         } )
+
+    app.delete('/parcles/:id', async(req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id)};
+
+      const result = await parcleCollection.deleteOne(query);
+      res.send(result)
+    })    
 
 
     // Send a ping to confirm a successful connection
