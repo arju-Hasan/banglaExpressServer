@@ -32,6 +32,7 @@ async function run() {
 
     const db = client.db('bangla_express_db');
     const parcleCollection = db.collection('parcles');
+    const paymentCollection = db.collection('payments');
 
 
 
@@ -70,6 +71,7 @@ async function run() {
       const result = await parcleCollection.deleteOne(query);
       res.send(result)
     })  
+
     // ============== payment Api =================
     app.post('/create-checkout-session', async (req, res) => {
     const paymentInfo = req.body;
@@ -89,7 +91,8 @@ async function run() {
     ],
     mode: 'payment',
     metadata:{
-      parcleId: paymentInfo.parcleId
+      parcleId: paymentInfo.parcleId,
+      parcleName: paymentInfo.parcleName
     },
     success_url: `${process.env.MY_DOMAIN}/dashboard/payment-success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${process.env.MY_DOMAIN}/dashboard/payment-cancelled`,
@@ -114,7 +117,22 @@ app.patch('/payment-success', async (req, res) =>{
       }
     }
     const result = await parcleCollection.updateOne(query, update);
-    res.send(result)
+    const payment ={
+      amount: session.amount_total/100,
+      currency: session.currency,
+      customerEmail: session.customer_email,
+      parcleId: session.metadata.parcleId,
+      parcleName: session.metadata.parcleName,
+      transactionId: session.payment_intent,
+      paymentStatus: session.payment_status,
+      paidAt : new Date(),
+      trackingId: 
+    }
+    if(session.payment_status === 'paid'){
+      const resultPayment = await paymentCollection.insertOne(payment)
+      res.send({success: true, modifyParcle: result, paymentInfo: resultPayment})
+    }
+
   }
 
   res.send({success: false})
