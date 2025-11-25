@@ -110,6 +110,7 @@ async function run() {
       },
     ],
     mode: 'payment',
+    customer_email: paymentInfo.customerEmail,
     metadata:{
       parcleId: paymentInfo.parcleId,
       parcleName: paymentInfo.parcleName
@@ -179,8 +180,13 @@ app.patch('/payment-success', async (req, res) =>{
 app.get('/payments', async(req, res)=>{
   const email = req.query.email;
   const query = {};
-  if(email)
+  if(email){
     query.customerEmail = email
+  }
+   const cursor = paymentCollection.find(query).sort({ paidAt: -1 });
+  const result = await cursor.toArray();
+
+  res.send(result);
 })
 
 
