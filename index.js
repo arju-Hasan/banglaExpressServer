@@ -9,7 +9,27 @@ const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const port = process.env.PORT || 3000
 
 
-// medilayer 
+function generateTrackingId() {
+    const prefix = "BEX";  // তোমার brand short code (Bangla Express)
+    const randomPart = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const timePart = Date.now().toString().slice(-6); 
+    return `${prefix}-${randomPart}-${timePart}`;
+}
+
+// // Another Generator 
+// const crypto = require("crypto");
+// function generateTrackingId() {
+//   const prefix = "PRCL"; // your brand prefix
+//   const date = new Date().toISOString().slice(0, 10).replace(/-/g, ""); // YYYYMMDD
+//   const random = crypto.randomBytes(3).toString("hex").toUpperCase(); // 6-char random hex
+//   return `${prefix}-${date}-${random}`;
+// }
+
+
+
+
+
+// medilayer //
 app.use(express.json());
 app.use(cors());
 
@@ -106,6 +126,18 @@ async function run() {
 app.patch('/payment-success', async (req, res) =>{
   const sessionId = req.query.session_id;
   const session = await stripe.checkout.sessions.retrieve(sessionId);
+  const trackingId = generateTrackingId();
+  const transactionId = session.payment_intent;
+  const query = {transactionId: transactionId};
+  const paymentExist = await paymentCollection.findOne(query);
+  if(paymentExist){
+    return res.send({
+      message: 'already exist', 
+      transactionId,
+      trackingId: paymentExist.trackingId,
+    })
+  }
+
   console.log('session', session);
   if(session.payment_status === 'paid'){
     const Id = session.metadata.parcleId;
@@ -113,7 +145,7 @@ app.patch('/payment-success', async (req, res) =>{
     const update ={
       $set: {
         paymentStatus:  'paid',
-
+        trackingId:  trackingId,
       }
     }
     const result = await parcleCollection.updateOne(query, update);
@@ -126,25 +158,36 @@ app.patch('/payment-success', async (req, res) =>{
       transactionId: session.payment_intent,
       paymentStatus: session.payment_status,
       paidAt : new Date(),
-      trackingId:'kiso-akta ' 
+      trackingId:  trackingId,
+      
     }
     if(session.payment_status === 'paid'){
       const resultPayment = await paymentCollection.insertOne(payment)
-      res.send({success: true, modifyParcle: result, paymentInfo: resultPayment})
+      res.send({
+        success: true, 
+        modifyParcle: result,
+        trackingId:  trackingId,
+        transactionId: session.payment_intent,
+        paymentInfo: resultPayment,
+      })
     }
-
   }
-
   res.send({success: false})
+})
+
+// payment histary api 
+app.get('/payments', async(req, res)=>{
+  const email = req.query.email;
+  const query = {};
+  if(email)
+    query.customerEmail = email
 })
 
 
  // Send a ping to confirm a successful connection ===================================
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
-  } finally {
-    // Ensures that the client will close when you finish/error
-  
+  } finally { // Ensures that the client will close when you finish/error 
   }
 }
 run().catch(console.dir);
