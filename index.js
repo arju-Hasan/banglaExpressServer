@@ -84,15 +84,14 @@ async function run() {
           name: paymentInfo.parcleName
         }
        },
-         quantity: 1
-       
+         quantity: 1       
       },
     ],
     mode: 'payment',
     metadata:{
       parcleId: paymentInfo.parcleId
     },
-    success_url: `${process.env.MY_DOMAIN}/dashboard/payment-success`,
+    success_url: `${process.env.MY_DOMAIN}/dashboard/payment-success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${process.env.MY_DOMAIN}/dashboard/payment-cancelled`,
   });
 
@@ -100,6 +99,26 @@ async function run() {
   console.log(session);
   res.send({url: session.url})
 });  
+
+app.patch('/payment-success', async (req, res) =>{
+  const sessionId = req.query.session_id;
+  const session = await stripe.checkout.sessions.retrieve(sessionId);
+  console.log('session', session);
+  if(session.payment_status === 'paid'){
+    const Id = session.metadata.parcleId;
+    const query = { _id: new ObjectId(Id)}
+    const update ={
+      $set: {
+        paymentStatus:  'paid',
+
+      }
+    }
+    const result = await parcleCollection.updateOne(query, update);
+    res.send(result)
+  }
+
+  res.send({success: false})
+})
 
 
  // Send a ping to confirm a successful connection ===================================
