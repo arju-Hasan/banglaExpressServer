@@ -126,7 +126,7 @@ app.patch('/payment-success', async (req, res) =>{
       transactionId: session.payment_intent,
       paymentStatus: session.payment_status,
       paidAt : new Date(),
-      trackingId: 
+      trackingId:'kiso-akta ' 
     }
     if(session.payment_status === 'paid'){
       const resultPayment = await paymentCollection.insertOne(payment)
