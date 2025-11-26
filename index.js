@@ -37,14 +37,23 @@ function generateTrackingId() {
 app.use(express.json());
 app.use(cors());
 
-const varifyFBToken = (req, res, next) =>{
-  console.log('header in the medilayer', req.headers.authorization);
+const varifyFBToken = async (req, res, next) =>{
+  // console.log('header in the medilayer', req.headers.authorization);
   const token = req.headers.authorization;
   
   if(!token){
     return res.status(401).send({message: 'unauthorized access'})
   }
-  next();
+   try{
+      const IdToken = token.split(" ")[1];
+      const decoded = await admin.auth().verifyIdToken(IdToken);
+      console.log("decoded the token", decoded);
+      req.decoded_email = decoded.email;
+      next();
+   }
+   catch(err){
+      return res.status(401).send({message: 'unauthorized access'})
+   }
 }
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.rzhc4zj.mongodb.net/?appName=Cluster0`;
@@ -75,6 +84,7 @@ async function run() {
       const {email} = req.query;
       if(email){
         query.SenderEmail = email;
+        
       }      
       // sort by new 
       const options = {sort : {createdAt: -1}}
@@ -195,6 +205,10 @@ app.get('/payments', varifyFBToken, async(req, res)=>{
   const query = {};
   if(email){
     query.customerEmail = email
+  }
+
+  if(email !== req.decoded_email){
+    return res.status(403).send({message: "forbidden access"})
   }
    const cursor = paymentCollection.find(query).sort({ paidAt: -1 });
   const result = await cursor.toArray();
