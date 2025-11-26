@@ -8,15 +8,22 @@ const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 // const { default: home } = require('./home');
 const port = process.env.PORT || 3000
 
+//firebase admin 
+const admin = require("firebase-admin");
+const serviceAccount = require("./firebase-admin.json");
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
+});
+
 
 function generateTrackingId() {
-    const prefix = "BEX";  // তোমার brand short code (Bangla Express)
+    const prefix = "BEX";  // brand short code (Bangla Express)
     const randomPart = Math.random().toString(36).substring(2, 8).toUpperCase();
     const timePart = Date.now().toString().slice(-6); 
     return `${prefix}-${randomPart}-${timePart}`;
 }
 
-// // Another Generator 
+// // Another Generator  juanker mahabub sir 
 // const crypto = require("crypto");
 // function generateTrackingId() {
 //   const prefix = "PRCL"; // your brand prefix
@@ -26,13 +33,19 @@ function generateTrackingId() {
 // }
 
 
-
-
-
 // medilayer //
 app.use(express.json());
 app.use(cors());
 
+const varifyFBToken = (req, res, next) =>{
+  console.log('header in the medilayer', req.headers.authorization);
+  const token = req.headers.authorization;
+  
+  if(!token){
+    return res.status(401).send({message: 'unauthorized access'})
+  }
+  next();
+}
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.rzhc4zj.mongodb.net/?appName=Cluster0`;
 
@@ -177,7 +190,7 @@ app.patch('/payment-success', async (req, res) =>{
 })
 
 // payment histary api 
-app.get('/payments', async(req, res)=>{
+app.get('/payments', varifyFBToken, async(req, res)=>{
   const email = req.query.email;
   const query = {};
   if(email){
