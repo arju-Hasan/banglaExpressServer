@@ -76,6 +76,7 @@ async function run() {
     const parcleCollection = db.collection('parcles');
     const paymentCollection = db.collection('payments');
     const usersCollection = db.collection('users');
+    const ridersCollection = db.collection('riders');
 
     // ================users api ========
       app.post('/users', async (req, res) => {
@@ -91,6 +92,26 @@ async function run() {
         const result = await usersCollection.insertOne(user);
         res.send(result)
       })
+
+  // ============= riders api ===========
+  app.post('/riders', async (req, res) => {
+    const rider = req.body;
+    rider.status = "panding";
+    rider.createdAt = new Date();
+
+     const result = await ridersCollection.insertOne(rider);
+        res.send(result)
+  })
+
+  app.get('/riders', async (req, res) =>{
+    const query = {}
+    if(req.query.status){
+      query.status = req.query.status;
+    }
+    const cursor = ridersCollection.find(query);
+    const result = await cursor.toArray();
+    res.send(result);
+  })
 
 
     // =============== parcles api ===============
@@ -121,7 +142,7 @@ async function run() {
        parcle.createdAt = new Date();
         const result = await parcleCollection.insertOne(parcle);
         res.send(result)
-        } )
+    } )
 
     app.delete('/parcles/:id', async(req, res) => {
       const id = req.params.id;
@@ -131,7 +152,7 @@ async function run() {
     })  
 
     // ============== payment Api =================
-    app.post('/create-checkout-session', async (req, res) => {
+app.post('/create-checkout-session', async (req, res) => {
     const paymentInfo = req.body;
     const amount = parseInt(paymentInfo.cost)*100
     const session = await stripe.checkout.sessions.create({
@@ -218,7 +239,7 @@ app.patch('/payment-success', async (req, res) =>{
   return res.send({success: false})
 })
 
-// payment histary api 
+// =================payment histary api =================
 app.get('/payments', varifyFBToken, async(req, res)=>{
   const email = req.query.email;
   const query = {};
@@ -236,7 +257,7 @@ app.get('/payments', varifyFBToken, async(req, res)=>{
 })
 
 
- // Send a ping to confirm a successful connection ===================================
+ // =================Send a ping to confirm a successful connection ==================
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally { // Ensures that the client will close when you finish/error 
