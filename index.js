@@ -75,7 +75,22 @@ async function run() {
     const db = client.db('bangla_express_db');
     const parcleCollection = db.collection('parcles');
     const paymentCollection = db.collection('payments');
+    const usersCollection = db.collection('users');
 
+    // ================users api ========
+      app.post('/users', async (req, res) => {
+        const user = req.body;
+        user.role = "user";
+        user.createAt = new Date();
+        const email = user.email;
+        const userExists = await usersCollection.findOne({email})
+        if(userExists){
+          return res.send({message: "user already  exists"})
+        }
+
+        const result = await usersCollection.insertOne(user);
+        res.send(result)
+      })
 
 
     // =============== parcles api ===============
@@ -143,7 +158,7 @@ async function run() {
   });
 
   // res.redirect(303, session.url);
-  console.log(session);
+  console.log(session.payment_intent);
   res.send({url: session.url})
 });  
 
@@ -151,6 +166,7 @@ app.patch('/payment-success', async (req, res) =>{
   const sessionId = req.query.session_id;
   const session = await stripe.checkout.sessions.retrieve(sessionId);
   const trackingId = generateTrackingId();
+
   const transactionId = session.payment_intent;
   const query = {transactionId: transactionId};
   const paymentExist = await paymentCollection.findOne(query);
@@ -161,6 +177,9 @@ app.patch('/payment-success', async (req, res) =>{
       trackingId: paymentExist.trackingId,
     })
   }
+
+
+
 
   console.log('session', session);
   if(session.payment_status === 'paid'){
@@ -196,7 +215,7 @@ app.patch('/payment-success', async (req, res) =>{
       })
     }
   }
-  res.send({success: false})
+  return res.send({success: false})
 })
 
 // payment histary api 
