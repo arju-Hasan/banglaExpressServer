@@ -113,6 +113,19 @@ async function run() {
     res.send(result);
   })
 
+  app.patch('/riders', varifyFBToken, async (req, res) => {
+    const status = req.body.status;
+    const id = req.params.id;
+    const query = { _id: new ObjectId(id)}
+    const UpdatedDoc = {
+      $set :{
+        status: status
+      }
+    }
+    const result = await ridersCollection.updateOne(query, UpdatedDoc);
+    res.send(result);
+  })
+
 
     // =============== parcles api ===============
     app.get('/parcles', async (req, res) =>{
