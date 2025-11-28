@@ -23,7 +23,7 @@ function generateTrackingId() {
     return `${prefix}-${randomPart}-${timePart}`;
 }
 
-// // Another Generator  juanker mahabub sir 
+// Another Generator  juanker mahabub sir 
 // const crypto = require("crypto");
 // function generateTrackingId() {
 //   const prefix = "PRCL"; // your brand prefix
@@ -113,7 +113,7 @@ async function run() {
     res.send(result);
   })
 
-  app.patch('/riders', varifyFBToken, async (req, res) => {
+  app.patch('/riders/:id', varifyFBToken, async (req, res) => {
     const status = req.body.status;
     const id = req.params.id;
     const query = { _id: new ObjectId(id)}
@@ -123,7 +123,25 @@ async function run() {
       }
     }
     const result = await ridersCollection.updateOne(query, UpdatedDoc);
+    if(status === 'approved'){
+      const email = req.body.email;
+      const query = {email};
+      const updateUser = {
+        $set: {
+          role : "rider"
+        }
+      }
+      const userResult = await usersCollection.updateOne(query, updateUser)
+      res.send(userResult)
+    }
     res.send(result);
+  })
+
+  app.delete('/riders/:id', async(req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id)};
+      const result = await ridersCollection.deleteOne(query);
+      res.send(result)
   })
 
 
@@ -280,6 +298,7 @@ run().catch(console.dir);
 
 
 app.get('/', (req, res) => {
+  // res.send('Bangla Express server is raning.....!')
   res.send('Bangla Express server is raning.....!')
  
 })
