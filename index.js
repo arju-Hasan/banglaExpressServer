@@ -113,29 +113,64 @@ async function run() {
     res.send(result);
   })
 
-  app.patch('/riders/:id', varifyFBToken, async (req, res) => {
-    const status = req.body.status;
+  // app.patch('/riders/:id', varifyFBToken, async (req, res) => {
+  //   const status = req.body.status;
+  //   const id = req.params.id;
+  //   const query = { _id: new ObjectId(id)}
+  //   const UpdatedDoc = {
+  //     $set :{
+  //       status: status
+  //     }
+  //   }
+  //   const result = await ridersCollection.updateOne(query, UpdatedDoc);
+  //   if(status === 'approved'){
+  //     const email = req.body.email;
+  //     const query = {email};
+  //     const updateUser = {
+  //       $set: {
+  //         role : "rider"
+  //       }
+  //     }
+  //     const userResult = await usersCollection.updateOne(query, updateUser)
+  //     return res.send(userResult)
+  //   }
+  //   res.send(result);
+  // })
+  // ===============  AIII =====================
+app.patch('/riders/:id', varifyFBToken, async (req, res) => {
+  try {
+    const { status, email } = req.body;
     const id = req.params.id;
-    const query = { _id: new ObjectId(id)}
-    const UpdatedDoc = {
-      $set :{
-        status: status
-      }
+    const riderQuery = { _id: new ObjectId(id) };
+    // Update rider status
+    const riderUpdate = await ridersCollection.updateOne(riderQuery, {
+      $set: { status }
+    });
+    // Approved হলে user role update
+    if (status === "approved") {
+      const userQuery = { email };
+      const userUpdate = await usersCollection.updateOne(userQuery, {
+        $set: { role: "rider" }
+      });
+      return res.send({
+        success: true,
+        riderUpdate,
+        userUpdate
+      });
     }
-    const result = await ridersCollection.updateOne(query, UpdatedDoc);
-    if(status === 'approved'){
-      const email = req.body.email;
-      const query = {email};
-      const updateUser = {
-        $set: {
-          role : "rider"
-        }
-      }
-      const userResult = await usersCollection.updateOne(query, updateUser)
-      res.send(userResult)
-    }
-    res.send(result);
-  })
+    // Reject হলে কেবল rider update send করবে
+    return res.send({
+      success: true,
+      riderUpdate
+    });
+
+  } catch (error) {
+    res.status(500).send({ success: false, error: error.message });
+  }
+});
+
+
+
 
   app.delete('/riders/:id', async(req, res) => {
       const id = req.params.id;
